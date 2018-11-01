@@ -33,7 +33,7 @@ class CastorPairDataset(Dataset, metaclass=ABCMeta):
                   ('aid', self.AID_FIELD), ('sentence_1_raw', self.RAW_TEXT_FIELD), ('sentence_2_raw', self.RAW_TEXT_FIELD)]
 
         examples = []
-        with open(os.path.join(path, 'a.toks'), 'r', encoding='itf-8') as f1, open(os.path.join(path, 'b.toks'), 'r', encoding='utf-8') as f2:
+        with open(os.path.join(path, 'a.toks'), 'r', encoding='utf-8') as f1, open(os.path.join(path, 'b.toks'), 'r', encoding='utf-8') as f2:
             sent_list_1 = [l.rstrip('.\n').split(' ') for l in f1]
             sent_list_2 = [l.rstrip('.\n').split(' ') for l in f2]
 
