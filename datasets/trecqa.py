@@ -27,7 +27,7 @@ class TRECQA(CastorPairDataset):
         """
         Create a TRECQA dataset instance
         """
-        super(TRECQA, self).__init__(path, load_ext_feats=True)
+        super(TRECQA, self).__init__(path, load_ext_feats=False)
 
     @classmethod
     def splits(cls, path, train='train-all', validation='raw-dev', test='raw-test', **kwargs):

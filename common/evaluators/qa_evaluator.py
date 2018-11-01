@@ -34,6 +34,8 @@ class QAEvaluator(Evaluator):
         test_cross_entropy_loss /= len(batch.dataset.examples)
 
         return [mean_average_precision, mean_reciprocal_rank, test_cross_entropy_loss], ['map', 'mrr', 'cross entropy loss']
+        # return [mean_average_precision, mean_reciprocal_rank, test_cross_entropy_loss, predictions, true_labels], \
+        #        ['map', 'mrr', 'cross entropy loss', 'predictions', 'true_labels']
 
     def get_final_prediction_and_label(self, batch_predictions, batch_labels):
         predictions = batch_predictions.exp()[:, 1]

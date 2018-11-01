@@ -11,6 +11,7 @@ import torch.optim as optim
 from common.dataset import DatasetFactory
 from common.evaluation import EvaluatorFactory
 from common.train import TrainerFactory
+from utils.relevancy_metrics import get_map_mrr
 from utils.serialization import load_checkpoint
 from .model import MPCNN
 from .lite_model import MPCNNLite
@@ -29,16 +30,7 @@ def get_logger():
     return logger
 
 
-def evaluate_dataset(split_name, dataset_cls, model, embedding, loader, batch_size, device, keep_results=False):
-    saved_model_evaluator = EvaluatorFactory.get_evaluator(dataset_cls, model, embedding, loader, batch_size, device,
-                                                           keep_results=keep_results)
-    scores, metric_names = saved_model_evaluator.get_scores()
-    logger.info('Evaluation metrics for {}'.format(split_name))
-    logger.info('\t'.join([' '] + metric_names))
-    logger.info('\t'.join([split_name] + list(map(str, scores))))
-
-
-if __name__ == '__main__':
+def parse_args():
     parser = argparse.ArgumentParser(description='PyTorch implementation of Multi-Perspective CNN')
     parser.add_argument('model_outfile', help='file to save final model')
     parser.add_argument('--arch', help='model architecture to use', choices=['mpcnn', 'mpcnn_lite'], default='mpcnn')
@@ -49,10 +41,12 @@ if __name__ == '__main__':
     parser.add_argument('--word-vectors-dim', type=int, default=300,
                         help='number of dimensions of word vectors (default: 300)')
     parser.add_argument('--skip-training', help='will load pre-trained model', action='store_true')
+    parser.add_argument('--skip-dev', help='will not use dev split', action='store_true')
     parser.add_argument('--device', type=int, default=0, help='GPU device, -1 for CPU (default: 0)')
     parser.add_argument('--wide-conv', action='store_true', default=False,
                         help='use wide convolution instead of narrow convolution (default: false)')
-    parser.add_argument('--attention', choices=['none', 'basic', 'idf'], default='none', help='type of attention to use')
+    parser.add_argument('--attention', choices=['none', 'basic', 'idf'], default='none',
+                        help='type of attention to use')
     parser.add_argument('--sparse-features', action='store_true',
                         default=False, help='use sparse features (default: false)')
     parser.add_argument('--batch-size', type=int, default=64, help='input batch size for training (default: 64)')
@@ -83,62 +77,34 @@ if __name__ == '__main__':
     parser.add_argument('--keep-results', action='store_true',
                         help='store the output score and qrel files into disk for the test set')
 
-    args = parser.parse_args()
+    return parser.parse_args()
 
-    device = torch.device(f'cuda:{args.device}' if torch.cuda.is_available() and args.device >= 0 else 'cpu')
 
-    random.seed(args.seed)
-    np.random.seed(args.seed)
-    torch.manual_seed(args.seed)
-    if args.device != -1:
-        torch.cuda.manual_seed(args.seed)
-
+def prepare(args, device):
+    set_random_seeds(args=args)
     logger = get_logger()
-    logger.info(pprint.pformat(vars(args)))
-
-    dataset_cls, embedding, train_loader, test_loader, dev_loader \
-        = DatasetFactory.get_dataset(args.dataset, args.word_vectors_dir, args.word_vectors_file, args.batch_size, args.device)
-
-    filter_widths = list(range(1, args.max_window_size + 1)) + [np.inf]
-    ext_feats = dataset_cls.EXT_FEATS if args.sparse_features else 0
-
-    model_cls = MPCNN if args.arch == 'mpcnn' else MPCNNLite
-    model = model_cls(args.word_vectors_dim, args.holistic_filters, args.per_dim_filters, filter_widths,
-                  args.hidden_units, dataset_cls.NUM_CLASSES, args.dropout, ext_feats,
-                  args.attention, args.wide_conv)
-
+    # logger.info(pprint.pformat(vars(args)))
+    dataset_cls, dev_loader, embedding, test_loader, train_loader = get_dataset(args)
+    model = get_model(args, dataset_cls)
     model = model.to(device)
     embedding = embedding.to(device)
+    return dataset_cls, dev_loader, embedding, logger, model, test_loader, train_loader
 
-    optimizer = None
-    if args.optimizer == 'adam':
-        optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.regularization, eps=args.epsilon)
-    elif args.optimizer == 'sgd':
-        optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.regularization)
-    else:
-        raise ValueError('optimizer not recognized: it should be either adam or sgd')
 
-    train_evaluator = EvaluatorFactory.get_evaluator(dataset_cls, model, embedding, train_loader, args.batch_size,
-                                                     args.device)
-    test_evaluator = EvaluatorFactory.get_evaluator(dataset_cls, model, embedding, test_loader, args.batch_size,
-                                                    args.device)
-    dev_evaluator = EvaluatorFactory.get_evaluator(dataset_cls, model, embedding, dev_loader, args.batch_size,
-                                                   args.device)
+def evaluate_dataset(logger, split_name, dataset_cls, model, embedding, loader, batch_size, device, keep_results=False):
+    saved_model_evaluator = EvaluatorFactory.get_evaluator(dataset_cls, model, embedding, loader, batch_size, device,
+                                                           keep_results=keep_results)
+    scores, metric_names = saved_model_evaluator.get_scores()
+    logger.info('Evaluation metrics for {}'.format(split_name))
+    logger.info('\t'.join([' '] + metric_names))
+    logger.info('\t'.join([split_name] + list(map(str, scores))))
 
-    trainer_config = {
-        'optimizer': optimizer,
-        'batch_size': args.batch_size,
-        'log_interval': args.log_interval,
-        'model_outfile': args.model_outfile,
-        'lr_reduce_factor': args.lr_reduce_factor,
-        'patience': args.patience,
-        'tensorboard': args.tensorboard,
-        'run_label': args.run_label,
-        'logger': logger
-    }
-    trainer = TrainerFactory.get_trainer(args.dataset, model, embedding, train_loader, trainer_config, train_evaluator, test_evaluator, dev_evaluator)
+
+def evaluate(args=None, device=None):
+    dataset_cls, dev_loader, embedding, logger, model, test_loader, train_loader = prepare(args, device)
 
     if not args.skip_training:
+        trainer = get_trainer(args, dataset_cls, dev_loader, embedding, logger, model, test_loader, train_loader)
         total_params = 0
         for param in model.parameters():
             size = [s for s in param.size()]
@@ -152,6 +118,104 @@ if __name__ == '__main__':
         state_dict[k] = tensor.to(device)
 
     model.load_state_dict(state_dict)
-    if dev_loader:
-        evaluate_dataset('dev', dataset_cls, model, embedding, dev_loader, args.batch_size, args.device)
-    evaluate_dataset('test', dataset_cls, model, embedding, test_loader, args.batch_size, args.device, args.keep_results)
+
+    if dev_loader and not args.skip_dev:
+        evaluate_dataset(logger, 'dev', dataset_cls, model, embedding, dev_loader, args.batch_size, args.device)
+
+    evaluate_dataset(logger, 'test', dataset_cls, model, embedding, test_loader, args.batch_size, args.device,
+                     args.keep_results)
+
+
+def predict(args=None, device=None, data_loader=None):
+    dataset_cls, dev_loader, embedding, logger, model, test_loader, train_loader = prepare(args, device)
+    _, _, state_dict, _, _ = load_checkpoint(args.model_outfile)
+
+    for k, tensor in state_dict.items():
+        state_dict[k] = tensor.to(device)
+    model.load_state_dict(state_dict)
+
+    # evaluate_dataset(logger, 'dev', dataset_cls, model, embedding, dev_loader, args.batch_size, args.device)
+
+    model.eval()
+    qids = []
+    predictions = []
+    labels = []
+
+    # for batch in self.data_loader:
+    for batch in data_loader:
+        scores = model.convModel(batch.sentence_1, batch.sentence_2, batch.ext_feats)
+        scores = model.linearLayer(scores)
+        qid_array = np.transpose(batch.id.cpu().data.numpy())
+        score_array = scores.cpu().data.numpy().reshape(-1)
+        true_label_array = np.transpose(batch.label.cpu().data.numpy())
+
+        qids.extend(qid_array.tolist())
+        predictions.extend(score_array.tolist())
+        labels.extend(true_label_array.tolist())
+
+        del scores
+
+    mean_average_precision, mean_reciprocal_rank = get_map_mrr(qids, predictions, labels, device)
+    return [mean_average_precision, mean_reciprocal_rank], ['map', 'mrr']
+
+
+def get_trainer(args, dataset_cls, dev_loader, embedding, logger, model, test_loader, train_loader):
+    if args.optimizer == 'adam':
+        optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.regularization, eps=args.epsilon)
+    elif args.optimizer == 'sgd':
+        optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.regularization)
+    else:
+        raise ValueError('optimizer not recognized: it should be either adam or sgd')
+    train_evaluator = EvaluatorFactory.get_evaluator(dataset_cls, model, embedding, train_loader, args.batch_size,
+                                                     args.device)
+    test_evaluator = EvaluatorFactory.get_evaluator(dataset_cls, model, embedding, test_loader, args.batch_size,
+                                                    args.device)
+    dev_evaluator = EvaluatorFactory.get_evaluator(dataset_cls, model, embedding, dev_loader, args.batch_size,
+                                                   args.device)
+    trainer_config = {
+        'optimizer': optimizer,
+        'batch_size': args.batch_size,
+        'log_interval': args.log_interval,
+        'model_outfile': args.model_outfile,
+        'lr_reduce_factor': args.lr_reduce_factor,
+        'patience': args.patience,
+        'tensorboard': args.tensorboard,
+        'run_label': args.run_label,
+        'logger': logger
+    }
+    trainer = TrainerFactory.get_trainer(args.dataset, model, embedding, train_loader, trainer_config, train_evaluator,
+                                         test_evaluator, dev_evaluator)
+    return trainer
+
+
+def set_random_seeds(args=None):
+    random.seed(args.seed)
+    np.random.seed(args.seed)
+    torch.manual_seed(args.seed)
+    if args.device != -1:
+        torch.cuda.manual_seed(args.seed)
+
+
+def get_model(args, dataset_cls):
+    filter_widths = list(range(1, args.max_window_size + 1)) + [np.inf]
+    ext_feats = dataset_cls.EXT_FEATS if args.sparse_features else 0
+    model_cls = MPCNN if args.arch == 'mpcnn' else MPCNNLite
+    model = model_cls(args.word_vectors_dim, args.holistic_filters, args.per_dim_filters, filter_widths,
+                      args.hidden_units, dataset_cls.NUM_CLASSES, args.dropout, ext_feats,
+                      args.attention, args.wide_conv)
+    return model
+
+
+def get_dataset(args):
+    dataset_cls, embedding, train_loader, test_loader, dev_loader \
+        = DatasetFactory.get_dataset(args.dataset, args.word_vectors_dir, args.word_vectors_file, args.batch_size,
+                                     args.device)
+    return dataset_cls, dev_loader, embedding, test_loader, train_loader
+
+
+if __name__ == '__main__':
+    args = parse_args()
+    device = torch.device(f'cuda:{args.device}' if torch.cuda.is_available() and args.device >= 0 else 'cpu')
+    evaluate(args=args, device=device)
+
+    # predict(args=args, device=device, data_loader=data)
