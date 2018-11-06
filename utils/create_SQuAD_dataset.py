@@ -7,8 +7,31 @@ import numpy as np
 import pickle
 from pandas.io.json import json_normalize
 
+np.random.seed(4241)
+
 
 def to_labeled_pairs(args: argparse.ArgumentParser, dff: pd.DataFrame) -> None:
+
+    all_df = pos_neg_df(args, dff)
+
+    all_df.question.to_csv(os.path.join(args.dest, 'a.toks'), index=False, sep='\t')
+    all_df.answer.to_csv(os.path.join(args.dest, 'b.toks'), index=False, sep='\t')
+    all_df.id.to_csv(os.path.join(args.dest, 'id.txt'), index=False, sep='\t')
+    all_df.label.to_csv(os.path.join(args.dest, 'sim.txt'), index=False, sep='\t')
+
+
+def to_bert_qnli(args: argparse.ArgumentParser, dff: pd.DataFrame) -> None:
+
+    all_df = pos_neg_df(args, dff)
+    all_df.label = all_df.label.apply(lambda val: 'entailment' if val == 1 else 'not_entailment')
+    all_df.drop(['id'], axis=1, inplace=True)
+    all_df.reset_index(drop=False, inplace=True)
+    all_df.drop(['index'], axis=1, inplace=True)
+    all_df.rename(index=str, columns={'answer': 'sentence'}, inplace=True)
+    all_df.to_csv(os.path.join(args.dest, 'bert_qnli.tsv'), sep='\t', index_label='index')
+
+
+def pos_neg_df(args: argparse.ArgumentParser, dff: pd.DataFrame) -> pd.DataFrame:
     neg_df = pd.DataFrame([], columns=dff.columns)
     neg_df.id = neg_df.id.astype(int)
     neg_df.label = neg_df.id.astype(int)
@@ -29,11 +52,7 @@ def to_labeled_pairs(args: argparse.ArgumentParser, dff: pd.DataFrame) -> None:
     all_df.reset_index(drop=True, inplace=True)
     all_df.question = all_df.question.apply(lambda q: str(q))
     all_df.sort_values(['question'], inplace=True)
-
-    all_df.question.to_csv(os.path.join(args.dest, 'a.toks'), index=False, sep='\t')
-    all_df.answer.to_csv(os.path.join(args.dest, 'b.toks'), index=False, sep='\t')
-    all_df.id.to_csv(os.path.join(args.dest, 'id.txt'), index=False, sep='\t')
-    all_df.label.to_csv(os.path.join(args.dest, 'sim.txt'), index=False, sep='\t')
+    return all_df
 
 
 def to_pickled_dict(args: argparse.ArgumentParser, dff: pd.DataFrame) -> None:
@@ -49,6 +68,7 @@ def to_pickled_dict(args: argparse.ArgumentParser, dff: pd.DataFrame) -> None:
             if rand_neg_answer != pos_answer:
                 out_dict[question].append([rand_neg_answer, 0])
                 num_neg -= 1
+    # TODO CHANGE HyperQA to load data from 3 diff splits
     result_dict = {'train': out_dict, 'dev': out_dict, 'test': out_dict}
     pickle.dump(result_dict, open(os.path.join(args.dest, 'env.pkl'), 'wb'))
 
@@ -99,6 +119,8 @@ if __name__ == '__main__':
 
     if args.format == 'castor':
         to_labeled_pairs(args, pos_df)
+    elif args.format == 'bert_qnli':
+        to_bert_qnli(args, pos_df)
     elif args.format in ('hyperqa', 'harinder'):
         to_pickled_dict(args, pos_df)
     else:
