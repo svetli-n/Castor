@@ -24,4 +24,4 @@ def get_args():
 
 if __name__ == '__main__':
     args = get_args()
-    print(mrr(args))
+    print(f'mrr: {mrr(args)}')

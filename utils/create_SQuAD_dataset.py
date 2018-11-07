@@ -28,7 +28,7 @@ def to_bert_qnli(args: argparse.ArgumentParser, dff: pd.DataFrame) -> None:
     all_df.reset_index(drop=False, inplace=True)
     all_df.drop(['index'], axis=1, inplace=True)
     all_df.rename(index=str, columns={'answer': 'sentence'}, inplace=True)
-    all_df.to_csv(os.path.join(args.dest, 'bert_qnli.tsv'), sep='\t', index_label='index')
+    all_df.to_csv(args.dest, sep='\t', index_label='index')
 
 
 def pos_neg_df(args: argparse.ArgumentParser, dff: pd.DataFrame) -> pd.DataFrame:
@@ -112,9 +112,9 @@ if __name__ == '__main__':
 
     args = get_args()
 
-    if os.path.exists(args.dest):
-        shutil.rmtree(args.dest, ignore_errors=True)
-    os.mkdir(args.dest)
+    # if os.path.exists(args.dest):
+    #     shutil.rmtree(args.dest, ignore_errors=True)
+    # os.mkdir(args.dest)
 
     pos_df = positive_df(args)
 
