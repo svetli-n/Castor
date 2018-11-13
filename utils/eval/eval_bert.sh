@@ -64,3 +64,5 @@ python $UTILS/metrics.py --dataset $GLUE_DIR/QNLI/dev.tsv --preds $OUTPUT/pred_r
 # Bert: answer length 10 train on QNLI test on Squad2
 # mrr: 0.6934865900383141
 
+
+# Add TODO train on WikiQA and TrecQA
