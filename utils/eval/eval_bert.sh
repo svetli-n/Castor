@@ -9,10 +9,17 @@ BERT_CHECKPOINS=$ROOT/bert-data/checkpoint
 SQUAD=$ROOT/squad
 OUTPUT=/tmp/bert_qnli_output
 
-QA_LENGTH=30
-echo "Bert: answer length $QA_LENGTH train on QNLI test on Squad2"
 
-python $UTILS/create_SQuAD_dataset.py --src $SQUAD/train-v2.0.json --total 1570 --num_neg 5 \
+NUM_NEG=10
+
+TOTAL=0
+let TOTAL=NUM_NEG+1
+let TOTAL=TOTAL*261
+
+QA_LENGTH=30
+echo "Bert: answer length $QA_LENGTH train on QNLI test on Squad2 with num_neg=$NUM_NEG and total=$TOTAL"
+
+python $UTILS/create_SQuAD_dataset.py --src $SQUAD/train-v2.0.json --total $TOTAL --num_neg $NUM_NEG \
         --dest $GLUE_DIR/QNLI/dev.tsv --answer_min_len $QA_LENGTH --format bert_qnli
 
 python $BERT_DIR/run_classifier.py \
@@ -34,9 +41,9 @@ python $UTILS/metrics.py --dataset $GLUE_DIR/QNLI/dev.tsv --preds $OUTPUT/pred_r
 
 
 QA_LENGTH=10
-echo "Bert: answer length $QA_LENGTH train on QNLI test on Squad2"
+echo "Bert: answer length $QA_LENGTH train on QNLI test on Squad2 with num_neg=$NUM_NEG and total=$TOTAL"
 
-python $UTILS/create_SQuAD_dataset.py --src $SQUAD/train-v2.0.json --total 1570 --num_neg 5 \
+python $UTILS/create_SQuAD_dataset.py --src $SQUAD/train-v2.0.json --total $TOTAL --num_neg $NUM_NEG \
         --dest $GLUE_DIR/QNLI/dev.tsv --answer_min_len $QA_LENGTH --format bert_qnli
 
 python $BERT_DIR/run_classifier.py \
@@ -59,10 +66,9 @@ python $UTILS/metrics.py --dataset $GLUE_DIR/QNLI/dev.tsv --preds $OUTPUT/pred_r
 
 # Expected output
 
-# Bert: answer length 30 train on QNLI test on Squad2
-# mrr: 0.7857142857142857
-# Bert: answer length 10 train on QNLI test on Squad2
-# mrr: 0.6934865900383141
-
+#Bert: answer length 30 train on QNLI test on Squad2 with num_neg=5 and total=1566
+#mrr: 0.7857142857142857
+#Bert: answer length 10 train on QNLI test on Squad2 with num_neg=5 and total=1566
+#mrr: 0.6934865900383141
 
 # Add TODO train on WikiQA and TrecQA

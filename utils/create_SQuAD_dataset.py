@@ -69,12 +69,12 @@ def to_pickled_dict(args: argparse.ArgumentParser, dff: pd.DataFrame) -> None:
                 out_dict[question].append([rand_neg_answer, 0])
                 num_neg -= 1
     # TODO CHANGE HyperQA to load data from 3 diff splits
-    # result_dict = {'train': out_dict, 'dev': out_dict, 'test': out_dict}
-    result_dict = {'test': out_dict}
+    result_dict = {'train': out_dict, 'dev': out_dict, 'test': out_dict}
+    # result_dict = {'test': out_dict}
 
     if not os.path.exists(args.dest):
         os.mkdir(args.dest)
-    pickle.dump(result_dict, open(os.path.join(args.dest, 'env.pkl'), 'xb'))
+    pickle.dump(result_dict, open(os.path.join(args.dest, 'env.pkl'), 'wb'))
 
 
 def positive_df(args: argparse.ArgumentParser) -> pd.DataFrame:
