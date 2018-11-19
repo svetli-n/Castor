@@ -22,7 +22,7 @@ echo "Bert: answer length $QA_LENGTH train on QNLI test on Squad2 with num_neg=$
 python $UTILS/create_SQuAD_dataset.py --src $SQUAD/train-v2.0.json --total $TOTAL --num_neg $NUM_NEG \
         --dest $GLUE_DIR/QNLI/dev.tsv --answer_min_len $QA_LENGTH --format bert_qnli
 
-python $BERT_DIR/run_classifier.py \
+python -W ignore $BERT_DIR/run_classifier.py \
   --task_name=qnli \
   --do_train=false \
   --do_eval=false \
@@ -46,7 +46,7 @@ echo "Bert: answer length $QA_LENGTH train on QNLI test on Squad2 with num_neg=$
 python $UTILS/create_SQuAD_dataset.py --src $SQUAD/train-v2.0.json --total $TOTAL --num_neg $NUM_NEG \
         --dest $GLUE_DIR/QNLI/dev.tsv --answer_min_len $QA_LENGTH --format bert_qnli
 
-python $BERT_DIR/run_classifier.py \
+python -W ignore $BERT_DIR/run_classifier.py \
   --task_name=qnli \
   --do_train=false \
   --do_eval=false \

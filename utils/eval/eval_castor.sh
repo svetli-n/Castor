@@ -7,7 +7,7 @@ CASTOR_DATA=$ROOT/Castor-data
 CASTOR_MODELS=$ROOT/Castor-models
 SQUAD=$ROOT/squad
 
-NUM_NEG=5
+NUM_NEG=10
 
 TOTAL=0
 let TOTAL=NUM_NEG+1
