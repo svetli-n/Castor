@@ -37,7 +37,10 @@ def pos_neg_df(args: argparse.ArgumentParser, dff: pd.DataFrame) -> pd.DataFrame
     neg_df.id = neg_df.id.astype(int)
     neg_df.label = neg_df.id.astype(int)
     cnt = 0
+    num_questions = 0
     for i, row in dff.iterrows():
+        if num_questions >= args.num_questions:
+            break
         pos_answer = row['answer']
         num_neg = args.num_neg
         while num_neg > 0:
@@ -49,7 +52,8 @@ def pos_neg_df(args: argparse.ArgumentParser, dff: pd.DataFrame) -> pd.DataFrame
                 neg_df.loc[cnt] = neg_tup
                 num_neg -= 1
                 cnt += 1
-    all_df = pd.concat([dff, neg_df], ignore_index=True)
+        num_questions += 1
+    all_df = pd.concat([dff[:num_questions], neg_df], ignore_index=True)
     all_df.reset_index(drop=True, inplace=True)
     all_df.question = all_df.question.apply(lambda q: str(q))
     all_df.sort_values(['question'], inplace=True)
@@ -97,6 +101,7 @@ def get_args() -> argparse.ArgumentParser:
     parser.add_argument('--src', type=str, help='Source folder for squad')
     parser.add_argument('--dest', type=str, help='Destination folder')
     parser.add_argument('--num_neg', type=int, help='Number of negative answers per 1 positive')
+    parser.add_argument('--num_questions', type=int, help='Number of different questions')
     parser.add_argument('--answer_min_len', type=int, help='Minimum number of words in the answer')
     parser.add_argument('--format', type=str, help='The dataset format, e.g. castor')
     return parser.parse_args()
