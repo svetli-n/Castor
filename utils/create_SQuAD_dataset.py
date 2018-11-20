@@ -29,7 +29,7 @@ def to_bert_qnli(args: argparse.ArgumentParser, dff: pd.DataFrame) -> None:
     all_df.drop(['index'], axis=1, inplace=True)
     all_df.rename(index=str, columns={'answer': 'sentence'}, inplace=True)
     all_df.to_csv(args.dest, sep='\t', index_label='index')
-    print(f'Total:{len(all_df)}:Unique:{len(all_df)/(arg.num_neg+1)}')
+    print(f'Total:{len(all_df)}:Unique:{len(all_df)/(args.num_neg+1)}')
 
 
 def pos_neg_df(args: argparse.ArgumentParser, dff: pd.DataFrame) -> pd.DataFrame:
