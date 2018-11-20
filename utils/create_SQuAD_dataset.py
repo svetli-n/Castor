@@ -29,7 +29,7 @@ def to_bert_qnli(args: argparse.ArgumentParser, dff: pd.DataFrame) -> None:
     all_df.drop(['index'], axis=1, inplace=True)
     all_df.rename(index=str, columns={'answer': 'sentence'}, inplace=True)
     all_df.to_csv(args.dest, sep='\t', index_label='index')
-    print(f'Total:{len(all_df)}')
+    print(f'Total:{len(all_df)}:Unique:{len(all_df)/(arg.num_neg+1)}')
 
 
 def pos_neg_df(args: argparse.ArgumentParser, dff: pd.DataFrame) -> pd.DataFrame:
@@ -79,8 +79,6 @@ def to_pickled_dict(args: argparse.ArgumentParser, dff: pd.DataFrame) -> None:
 
 
 def positive_df(args: argparse.ArgumentParser) -> pd.DataFrame:
-    total = args.total
-    num_pos = int(total / (args.num_neg + 1))
     raw = pd.read_json(args.src)
     dff = json_normalize(raw.data, record_path=['paragraphs', 'qas'])[['question', 'plausible_answers']]
     dff.dropna(inplace=True)
@@ -88,7 +86,7 @@ def positive_df(args: argparse.ArgumentParser) -> pd.DataFrame:
     dff.drop('plausible_answers', axis=1, inplace=True)
     dff.question = dff.question.str.replace('\?$', '').str.lower()
     dff['label'] = 1
-    dff = dff[dff.answer.apply(lambda a: len(a.split()) >= args.answer_min_len)][:num_pos]
+    dff = dff[dff.answer.apply(lambda a: len(a.split()) >= args.answer_min_len)]
     dff.reset_index(drop=True, inplace=True)
     dff.insert(0, 'id', dff.index)
     return dff
@@ -100,7 +98,6 @@ def get_args() -> argparse.ArgumentParser:
     parser.add_argument('--dest', type=str, help='Destination folder')
     parser.add_argument('--num_neg', type=int, help='Number of negative answers per 1 positive')
     parser.add_argument('--answer_min_len', type=int, help='Minimum number of words in the answer')
-    parser.add_argument('--total', type=int, help='Number of samples in the result dataset')
     parser.add_argument('--format', type=str, help='The dataset format, e.g. castor')
     return parser.parse_args()
 
