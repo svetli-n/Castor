@@ -7,15 +7,13 @@ CASTOR_DATA=$ROOT/Castor-data
 CASTOR_MODELS=$ROOT/Castor-models
 SQUAD=$ROOT/squad
 
-NUM_NEG=10
 
-TOTAL=0
-let TOTAL=NUM_NEG+1
-let TOTAL=TOTAL*261
+NUM_NEG=${NUM_NEG:-"10"}
+NUM_QUESTIONS=${NUM_QUESTIONS:-"1"}
 
-echo "Castor: answer length 30 train on WikiQA test on Squad2 with num_neg=$NUM_NEG and total=$TOTAL"
+echo "Castor: answer length 30 train on WikiQA test on Squad2 with num_neg=$NUM_NEG and num_questions=$NUM_QUESTIONS"
 
-python $UTILS/create_SQuAD_dataset.py --src $SQUAD/train-v2.0.json --total $TOTAL --num_neg $NUM_NEG \
+python $UTILS/create_SQuAD_dataset.py --src $SQUAD/train-v2.0.json --num_questions $NUM_QUESTIONS --num_neg $NUM_NEG \
         --dest $CASTOR_DATA/datasets/WikiQA/test --answer_min_len 30 --format castor
 
 cd $CASTOR
@@ -23,9 +21,9 @@ cd $CASTOR
 python -W ignore -m mp_cnn $CASTOR_MODELS/mp_cnn/mpcnn.wikiqa.model --dataset wikiqa --holistic-filters 100 \
         --skip-training --device -1 --skip-dev
 
-echo "Castor: answer length 10 train on WikiQA test on Squad2 with num_neg=$NUM_NEG and total=$TOTAL"
+echo "Castor: answer length 10 train on WikiQA test on Squad2 with num_neg=$NUM_NEG and num_questions=$NUM_QUESTIONS"
 
-python $UTILS/create_SQuAD_dataset.py --src $SQUAD/train-v2.0.json --total $TOTAL --num_neg $NUM_NEG  \
+python $UTILS/create_SQuAD_dataset.py --src $SQUAD/train-v2.0.json --num_questions $NUM_QUESTIONS --num_neg $NUM_NEG  \
         --dest $CASTOR_DATA/datasets/WikiQA/test --answer_min_len 10 --format castor
 
 cd $CASTOR
@@ -34,9 +32,9 @@ python -W ignore -m mp_cnn $CASTOR_MODELS/mp_cnn/mpcnn.wikiqa.model --dataset wi
         --skip-training  --device -1 --skip-dev
 
 
-echo "Castor: answer length 30 train on TrecQA test on Squad2 with num_neg=$NUM_NEG and total=$TOTAL"
+echo "Castor: answer length 30 train on TrecQA test on Squad2 with num_neg=$NUM_NEG and num_questions=$NUM_QUESTIONS"
 
-python $UTILS/create_SQuAD_dataset.py --src $SQUAD/train-v2.0.json --total $TOTAL --num_neg $NUM_NEG  \
+python $UTILS/create_SQuAD_dataset.py --src $SQUAD/train-v2.0.json --num_questions $NUM_QUESTIONS --num_neg $NUM_NEG  \
         --dest $CASTOR_DATA/datasets/TrecQA/raw-test --answer_min_len 30 --format castor
 
 cd $CASTOR
@@ -44,9 +42,9 @@ cd $CASTOR
 python -W ignore -m mp_cnn $CASTOR_MODELS/mp_cnn/mpcnn.trecqa.model --dataset trecqa  --holistic-filters 200 \
         --skip-training --device -1 --skip-dev
 
-echo "Castor: answer length 10 train on TrecQA test on Squad2 with num_neg=$NUM_NEG and total=$TOTAL"
+echo "Castor: answer length 10 train on TrecQA test on Squad2 with num_neg=$NUM_NEG and num_questions=$NUM_QUESTIONS"
 
-python $UTILS/create_SQuAD_dataset.py --src $SQUAD/train-v2.0.json --total $TOTAL --num_neg $NUM_NEG  \
+python $UTILS/create_SQuAD_dataset.py --src $SQUAD/train-v2.0.json --num_questions $NUM_QUESTIONS --num_neg $NUM_NEG  \
         --dest $CASTOR_DATA/datasets/TrecQA/raw-test --answer_min_len 10 --format castor
 
 cd $CASTOR
