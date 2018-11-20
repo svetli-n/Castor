@@ -10,13 +10,14 @@ SQUAD=$ROOT/squad
 OUTPUT=/tmp/bert_qnli_output
 
 
-NUM_NEG=10
+NUM_NEG=${NUM_NEG:-"10"}
+NUM_QUESTIONS=${NUM_QUESTIONS:-"1"}
 
 
 QA_LENGTH=30
-echo "Bert: answer length $QA_LENGTH train on QNLI test on Squad2 with num_neg=$NUM_NEG"
+echo "Bert: answer length $QA_LENGTH train on QNLI test on Squad2 with num_neg=$NUM_NEG and num_questions=$NUM_QUESTIONS"
 
-python $UTILS/create_SQuAD_dataset.py --src $SQUAD/train-v2.0.json --num_neg $NUM_NEG \
+python $UTILS/create_SQuAD_dataset.py --src $SQUAD/train-v2.0.json --num_neg $NUM_NEG --num_quesions $NUM_QUESTIONS \
         --dest $GLUE_DIR/QNLI/dev.tsv --answer_min_len $QA_LENGTH --format bert_qnli
 
 python -W ignore $BERT_DIR/run_classifier.py \
@@ -38,9 +39,9 @@ python $UTILS/metrics.py --dataset $GLUE_DIR/QNLI/dev.tsv --preds $OUTPUT/pred_r
 
 
 QA_LENGTH=10
-echo "Bert: answer length $QA_LENGTH train on QNLI test on Squad2 with num_neg=$NUM_NEG"
+echo "Bert: answer length $QA_LENGTH train on QNLI test on Squad2 with num_neg=$NUM_NEG and num_questions=$NUM_QUESTIONS"
 
-python $UTILS/create_SQuAD_dataset.py --src $SQUAD/train-v2.0.json --num_neg $NUM_NEG \
+python $UTILS/create_SQuAD_dataset.py --src $SQUAD/train-v2.0.json --num_neg $NUM_NEG --num_quesions $NUM_QUESTIONS \
         --dest $GLUE_DIR/QNLI/dev.tsv --answer_min_len $QA_LENGTH --format bert_qnli
 
 python -W ignore $BERT_DIR/run_classifier.py \
