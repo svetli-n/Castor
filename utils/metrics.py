@@ -9,7 +9,7 @@ def mrr(args: argparse.ArgumentParser) -> float:
 
     df = merged.groupby('question')['actual', 'prob_1'].apply(
         lambda x: x.sort_values('prob_1', ascending=False)).reset_index()
-    mrr = df.groupby('question')['actual'].apply(lambda x: 1 / (1 + x.tolist().index(0))).values.mean()
+    mrr = df.groupby('question')['actual'].apply(lambda x: 1 / (1 + x.tolist().index(1))).values.mean()
     return mrr
 
 
