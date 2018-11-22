@@ -1,7 +1,6 @@
 import argparse
 from collections import defaultdict
 import os
-import shutil
 import pandas as pd
 import numpy as np
 import pickle
@@ -18,6 +17,7 @@ def to_labeled_pairs(args: argparse.ArgumentParser, dff: pd.DataFrame) -> None:
     all_df.answer.to_csv(os.path.join(args.dest, 'b.toks'), index=False, sep='\t')
     all_df.id.to_csv(os.path.join(args.dest, 'id.txt'), index=False, sep='\t')
     all_df.label.to_csv(os.path.join(args.dest, 'sim.txt'), index=False, sep='\t')
+    print(f'Total:{len(all_df)}:Unique:{len(all_df)/(args.num_neg+1)}')
 
 
 def to_bert_qnli(args: argparse.ArgumentParser, dff: pd.DataFrame) -> None:

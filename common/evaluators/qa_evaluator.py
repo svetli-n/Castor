@@ -12,17 +12,23 @@ class QAEvaluator(Evaluator):
         qids = []
         true_labels = []
         predictions = []
+        questions = []
+        answers = []
 
         for batch in self.data_loader:
             qids.extend(batch.id.detach().cpu().numpy())
             # Select embedding
             sent1, sent2 = self.get_sentence_embeddings(batch)
 
-            output = self.model(sent1, sent2, batch.ext_feats, batch.dataset.word_to_doc_cnt, batch.sentence_1_raw, batch.sentence_2_raw)
+            output = self.model(sent1, sent2, batch.ext_feats, batch.dataset.word_to_doc_cnt, batch.sentence_1_raw,
+                                batch.sentence_2_raw)
             test_cross_entropy_loss += F.cross_entropy(output, batch.label, size_average=False).item()
 
             true_labels.extend(batch.label.detach().cpu().numpy())
             predictions.extend(output.detach().exp()[:, 1].cpu().numpy())
+
+            questions.extend(batch.sentence_1_raw)
+            answers.extend(batch.sentence_2_raw)
 
             del output
 
@@ -33,9 +39,9 @@ class QAEvaluator(Evaluator):
                                                                    keep_results=self.keep_results)
         test_cross_entropy_loss /= len(batch.dataset.examples)
 
-        return [mean_average_precision, mean_reciprocal_rank, test_cross_entropy_loss], ['map', 'mrr', 'cross entropy loss']
-        # return [mean_average_precision, mean_reciprocal_rank, test_cross_entropy_loss, predictions, true_labels], \
-        #        ['map', 'mrr', 'cross entropy loss', 'predictions', 'true_labels']
+        return [mean_average_precision, mean_reciprocal_rank, test_cross_entropy_loss], ['map', 'mrr',
+                                                                                         'cross entropy loss'], \
+               zip(questions, answers), zip(qids, true_labels, predictions)
 
     def get_final_prediction_and_label(self, batch_predictions, batch_labels):
         predictions = batch_predictions.exp()[:, 1]

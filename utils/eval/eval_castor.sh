@@ -19,7 +19,7 @@ python $UTILS/create_SQuAD_dataset.py --src $SQUAD/train-v2.0.json --num_questio
 cd $CASTOR
 
 python -W ignore -m mp_cnn $CASTOR_MODELS/mp_cnn/mpcnn.wikiqa.model --dataset wikiqa --holistic-filters 100 \
-        --skip-training --device -1 --skip-dev
+        --skip-training --device -1 --skip-dev --keep-results
 
 echo "Castor: answer length 10 train on WikiQA test on Squad2 with num_neg=$NUM_NEG and num_questions=$NUM_QUESTIONS"
 
@@ -29,7 +29,7 @@ python $UTILS/create_SQuAD_dataset.py --src $SQUAD/train-v2.0.json --num_questio
 cd $CASTOR
 
 python -W ignore -m mp_cnn $CASTOR_MODELS/mp_cnn/mpcnn.wikiqa.model --dataset wikiqa --holistic-filters 100 \
-        --skip-training  --device -1 --skip-dev
+        --skip-training  --device -1 --skip-dev --keep-results
 
 
 echo "Castor: answer length 30 train on TrecQA test on Squad2 with num_neg=$NUM_NEG and num_questions=$NUM_QUESTIONS"
@@ -40,7 +40,7 @@ python $UTILS/create_SQuAD_dataset.py --src $SQUAD/train-v2.0.json --num_questio
 cd $CASTOR
 
 python -W ignore -m mp_cnn $CASTOR_MODELS/mp_cnn/mpcnn.trecqa.model --dataset trecqa  --holistic-filters 200 \
-        --skip-training --device -1 --skip-dev
+        --skip-training --device -1 --skip-dev --keep-results
 
 echo "Castor: answer length 10 train on TrecQA test on Squad2 with num_neg=$NUM_NEG and num_questions=$NUM_QUESTIONS"
 
@@ -50,24 +50,33 @@ python $UTILS/create_SQuAD_dataset.py --src $SQUAD/train-v2.0.json --num_questio
 cd $CASTOR
 
 python -W ignore -m mp_cnn $CASTOR_MODELS/mp_cnn/mpcnn.trecqa.model --dataset trecqa  --holistic-filters 200 \
-        --skip-training --device -1 --skip-dev
+        --skip-training --device -1 --skip-dev --keep-results
+
+
+#Example call
+
+#NUM_NEG=5 NUM_QUESTIONS=10 sh eval_castor.sh
+
 
 #Expected output
 
-#Castor: answer length 30 train on WikiQA test on Squad2 with num_neg=5 and total=1566
+#Castor: answer length 30 train on WikiQA test on Squad2 with num_neg=5 and num_questions=10
+#Total:60:Unique:10.0
 #INFO - Evaluation metrics for test
 #INFO -          map     mrr     cross entropy loss
-#INFO - test     0.7202  0.7202  0.4024707135700044
-#Castor: answer length 10 train on WikiQA test on Squad2 with num_neg=5 and total=1566
+#INFO - test     0.7083  0.7083  0.4039849599202474
+#Castor: answer length 10 train on WikiQA test on Squad2 with num_neg=5 and num_questions=10
+#Total:60:Unique:10.0
 #INFO - Evaluation metrics for test
 #INFO -          map     mrr     cross entropy loss
-#INFO - test     0.6298  0.6298  0.5799435406047875
-#Castor: answer length 30 train on TrecQA test on Squad2 with num_neg=5 and total=1566
+#INFO - test     0.545   0.545   0.5498195648193359
+#Castor: answer length 30 train on TrecQA test on Squad2 with num_neg=5 and num_questions=10
+#Total:60:Unique:10.0
 #INFO - Evaluation metrics for test
 #INFO -          map     mrr     cross entropy loss
-#INFO - test     0.7821  0.7821  1.2562036627814883
-#Castor: answer length 10 train on TrecQA test on Squad2 with num_neg=5 and total=1566
+#INFO - test     0.77    0.77    1.2415805816650392
+#Castor: answer length 10 train on TrecQA test on Squad2 with num_neg=5 and num_questions=10
+#Total:60:Unique:10.0
 #INFO - Evaluation metrics for test
 #INFO -          map     mrr     cross entropy loss
-#INFO - test     0.6579  0.6579  1.6677128486097392
-
+#INFO - test     0.7833  0.7833  1.5396302541097004

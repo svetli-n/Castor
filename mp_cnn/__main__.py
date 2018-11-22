@@ -5,6 +5,7 @@ import pprint
 import random
 
 import numpy as np
+import pandas as pd
 import torch
 import torch.optim as optim
 
@@ -76,6 +77,8 @@ def parse_args():
     parser.add_argument('--run-label', type=str, help='label to describe run')
     parser.add_argument('--keep-results', action='store_true',
                         help='store the output score and qrel files into disk for the test set')
+    parser.add_argument('--results-file', type=str, help='Where to store prediction results for debugging.',
+                        default='/tmp/predictions')
 
     return parser.parse_args()
 
@@ -83,7 +86,6 @@ def parse_args():
 def prepare(args, device):
     set_random_seeds(args=args)
     logger = get_logger()
-    # logger.info(pprint.pformat(vars(args)))
     dataset_cls, dev_loader, embedding, test_loader, train_loader = get_dataset(args)
     model = get_model(args, dataset_cls)
     model = model.to(device)
@@ -91,10 +93,28 @@ def prepare(args, device):
     return dataset_cls, dev_loader, embedding, logger, model, test_loader, train_loader
 
 
-def evaluate_dataset(logger, split_name, dataset_cls, model, embedding, loader, batch_size, device, keep_results=False):
+def evaluate_dataset(logger, split_name, dataset_cls, model, embedding, loader, batch_size, device, results_file,
+                     keep_results=False):
+
+    def log_predictions(quest_answ, preds):
+        df = pd.concat(
+            [pd.DataFrame(list(quest_answ)), pd.DataFrame(list(preds))],
+            axis=1,
+            ignore_index=True,
+        )
+        df.columns = ['question', 'answer', 'qid', 'prediction', 'prob']
+        df.sort_values(['question', 'prob'], inplace=True, ascending=False)
+        df[['qid', 'prediction', 'prob', 'question', 'prediction', 'answer']].to_csv(
+            f'{results_file}-{dataset_cls.NAME}',
+            sep='\t',
+            index=None
+        )
+
     saved_model_evaluator = EvaluatorFactory.get_evaluator(dataset_cls, model, embedding, loader, batch_size, device,
                                                            keep_results=keep_results)
-    scores, metric_names = saved_model_evaluator.get_scores()
+    scores, metric_names, quest_answ, preds = saved_model_evaluator.get_scores()
+    if keep_results:
+        log_predictions(quest_answ, preds)
     logger.info('Evaluation metrics for {}'.format(split_name))
     logger.info('\t'.join([' '] + metric_names))
     logger.info('\t'.join([split_name] + list(map(str, scores))))
@@ -123,7 +143,7 @@ def evaluate(args=None, device=None):
         evaluate_dataset(logger, 'dev', dataset_cls, model, embedding, dev_loader, args.batch_size, args.device)
 
     evaluate_dataset(logger, 'test', dataset_cls, model, embedding, test_loader, args.batch_size, args.device,
-                     args.keep_results)
+                     args.results_file, args.keep_results)
 
 
 def predict(args=None, device=None, data_loader=None):
