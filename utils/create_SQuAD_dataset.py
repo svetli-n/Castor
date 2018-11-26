@@ -44,7 +44,8 @@ def get_pos_neg_df(args: argparse.ArgumentParser, pos_df: pd.DataFrame) -> pd.Da
     neg_answers_size = min(args.num_neg, len(pos_df)-1)
     num_answers = neg_answers_size + 1
 
-    for i, row in tqdm(pos_df.iterrows(), total=args.num_questions):
+    # for i, row in tqdm(pos_df.iterrows(), total=args.num_questions):
+    for i, row in pos_df.iterrows():
         if i >= args.num_questions:
             break
 
