@@ -38,6 +38,9 @@ def to_bert_qnli(args: argparse.ArgumentParser, dff: pd.DataFrame) -> None:
 
 def get_pos_neg_df(args: argparse.ArgumentParser, pos_df: pd.DataFrame) -> pd.DataFrame:
     pos_neg_df = pd.DataFrame([], columns=pos_df.columns)
+    pos_neg_df.id = pos_neg_df.id.astype(int)
+    pos_neg_df.label = pos_neg_df.id.astype(int)
+
     neg_answers_size = min(args.num_neg, len(pos_df)-1)
     num_answers = neg_answers_size + 1
 
